@@ -23,11 +23,11 @@ Your records live in your own free [Supabase](https://supabase.com) database, so
 
 1. Sign up at [supabase.com](https://supabase.com) (free) and click **New project**. Pick any name, set a database password, and choose the region closest to you.
 2. When the project is ready, open **SQL Editor**, paste the whole of [`supabase/schema.sql`](supabase/schema.sql), and click **Run**.
-3. Open **Authentication → Users → Add user → Create new user**. Enter the email and password you'll sign in with, and tick **Auto Confirm User**.
+3. Open **Authentication → Users → Add user → Create new user**. Enter the email and password you'll sign in with, and tick **Auto Confirm User**. The first login you create becomes an admin automatically.
 4. Open **Authentication → Sign In / Providers** and turn off **Allow new users to sign up**, so nobody else can create an account.
 5. Open **Project Settings → API Keys** and copy the **Project URL** and the **publishable key** (the `anon` key on older projects).
 
-The publishable key is safe to put in a website. Row level security in the schema only lets a signed-in account see its own records.
+The publishable key is safe to put in a website. Row level security in the schema only lets admins see or change records. Anyone else, signed in or not, gets nothing.
 
 ### 2. Turn on the website
 
@@ -43,6 +43,20 @@ Open the link and sign in.
 
 - **iPhone (Safari)**: tap Share, then **Add to Home Screen**.
 - **Android (Chrome)**: tap the ⋮ menu, then **Add to Home screen** or **Install app**.
+
+### Adding another admin
+
+Admins share the same workers and payments. To add one:
+
+1. In the app, open **Settings → Admins** and add their email.
+2. In Supabase, open **Authentication → Users → Add user → Create new user**. Use the same email, set a password, and tick **Auto Confirm User**.
+3. Send them the app link and their password. They can change the password under **Settings → Change password**.
+
+Remove an admin from the same list and they immediately lose access. Their login can stay or be deleted in Supabase, and the records they created stay either way. Nobody can remove themselves, so there's always at least one admin.
+
+### Updating the database
+
+When a new version changes [`supabase/schema.sql`](supabase/schema.sql), paste the whole file into the SQL Editor again and click **Run**. It updates the database in place and keeps all records.
 
 ### Good to know
 

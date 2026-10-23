@@ -24,3 +24,11 @@ export interface DataStore {
   addEntries(entries: NewEntry[]): Promise<Entry[]>
   deleteEntry(id: string): Promise<void>
 }
+
+/** The signed-in account isn't on the admins list, so it can't see any records. */
+export class NoAccessError extends Error {
+  constructor() {
+    super("This account doesn't have access yet.")
+    this.name = 'NoAccessError'
+  }
+}

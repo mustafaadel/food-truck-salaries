@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { Month } from '../lib/months'
-import type { DataStore, NewEntry, NewWorker, Snapshot, WorkerPatch } from './store'
+import { useSession } from '../app/session'
+import { NoAccessError, type DataStore, type NewEntry, type NewWorker, type Snapshot, type WorkerPatch } from './store'
 
 interface DataContextValue {
   mode: DataStore['mode']
@@ -26,10 +27,13 @@ export function useData(): DataContextValue {
 export function DataProvider({ store, children }: { store: DataStore; children: ReactNode }) {
   const [data, setData] = useState<Snapshot | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [noAccess, setNoAccess] = useState(false)
+  const session = useSession()
 
   const load = useCallback(
     () =>
       store.load().then(setData, (error: unknown) => {
+        if (error instanceof NoAccessError) return setNoAccess(true)
         setLoadError(typeof error === 'object' && error && 'message' in error ? String(error.message) : String(error))
       }),
     [store],
@@ -89,6 +93,35 @@ export function DataProvider({ store, children }: { store: DataStore; children: 
     }
   }, [data, reload, store])
 
+  if (noAccess) {
+    return (
+      <main className="center-screen">
+        <div className="card auth-card stack">
+          <h1>No access yet</h1>
+          <p>
+            You're signed in as <strong>{session?.email}</strong>, but this account isn't an admin yet.
+          </p>
+          <p className="muted">
+            Ask an admin to add your email in the app under Settings → Admins, then tap Try again.
+          </p>
+          <div className="button-row">
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                setNoAccess(false)
+                void reload()
+              }}
+            >
+              Try again
+            </button>
+            <button className="btn btn-quiet" onClick={() => void session?.signOut()}>
+              Sign out
+            </button>
+          </div>
+        </div>
+      </main>
+    )
+  }
   if (loadError) {
     return (
       <main className="center-screen">

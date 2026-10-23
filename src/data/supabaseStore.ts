@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Entry, EntryKind, SalaryRate, Worker } from '../lib/types'
-import type { DataStore, NewEntry, NewWorker, WorkerPatch } from './store'
+import { NoAccessError, type DataStore, type NewEntry, type NewWorker, type WorkerPatch } from './store'
 
 interface WorkerRow {
   id: string
@@ -92,6 +92,9 @@ export class SupabaseStore implements DataStore {
   }
 
   async load() {
+    const { data: isAdmin, error } = await this.db.rpc('is_admin')
+    if (error) throw error
+    if (!isAdmin) throw new NoAccessError()
     const [workers, rates, entries] = await Promise.all([
       this.fetchAll<WorkerRow>('workers', 'id, name, phone, daily_amount, start_month, end_month, notes'),
       this.fetchAll<RateRow>('salary_rates', 'id, worker_id, effective_month, monthly_amount'),

@@ -1,5 +1,6 @@
 import { useSession } from '../app/session'
 import { useSettings } from '../app/settings'
+import { AdminsCard, PasswordCard } from '../components/AdminSettings'
 import { Field } from '../components/fields'
 import { isConfigBuiltIn, saveSupabaseConfig, setMode } from '../data/config'
 import { useData } from '../data/DataContext'
@@ -30,7 +31,9 @@ export function SettingsPage() {
     const names = new Map(data.workers.map((w) => [w.id, w.name]))
     const rows = [...data.entries]
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map((e) => [e.date, names.get(e.workerId) ?? '', entryKindLabel(e.kind), e.amount, e.note].map(csvCell).join(','))
+      .map((e) =>
+        [e.date, names.get(e.workerId) ?? '', entryKindLabel(e.kind), e.amount, e.note].map(csvCell).join(','),
+      )
     // The byte order mark makes Excel read Arabic and other non-English names correctly.
     download(`salaries-${todayISO()}.csv`, '﻿' + ['Date,Worker,Type,Amount,Note', ...rows].join('\r\n'), 'text/csv')
   }
@@ -71,8 +74,8 @@ export function SettingsPage() {
         <section className="card stack-sm">
           <h2 className="card-title">Demo mode</h2>
           <p className="muted small">
-            You're trying the app with sample data that stays on this device. Connect your database to keep real
-            records safe and use them from any phone.
+            You're trying the app with sample data that stays on this device. Connect your database to keep real records
+            safe and use them from any phone.
           </p>
           <div className="button-row">
             <button
@@ -97,29 +100,33 @@ export function SettingsPage() {
           </div>
         </section>
       ) : (
-        <section className="card stack-sm">
-          <h2 className="card-title">Account</h2>
-          {session?.email && <p className="muted small">Signed in as {session.email}</p>}
-          <div className="button-row">
-            <button className="btn btn-secondary" onClick={() => void session?.signOut()}>
-              Sign out
-            </button>
-            {!isConfigBuiltIn() && (
-              <button
-                className="btn btn-quiet"
-                onClick={() => {
-                  if (!confirm('Disconnect this phone from the database? Your records stay safe in Supabase.')) return
-                  void session?.signOut().finally(() => {
-                    saveSupabaseConfig(null)
-                    location.reload()
-                  })
-                }}
-              >
-                Disconnect database
+        <>
+          <AdminsCard />
+          <PasswordCard />
+          <section className="card stack-sm">
+            <h2 className="card-title">Account</h2>
+            {session?.email && <p className="muted small">Signed in as {session.email}</p>}
+            <div className="button-row">
+              <button className="btn btn-secondary" onClick={() => void session?.signOut()}>
+                Sign out
               </button>
-            )}
-          </div>
-        </section>
+              {!isConfigBuiltIn() && (
+                <button
+                  className="btn btn-quiet"
+                  onClick={() => {
+                    if (!confirm('Disconnect this phone from the database? Your records stay safe in Supabase.')) return
+                    void session?.signOut().finally(() => {
+                      saveSupabaseConfig(null)
+                      location.reload()
+                    })
+                  }}
+                >
+                  Disconnect database
+                </button>
+              )}
+            </div>
+          </section>
+        </>
       )}
     </div>
   )

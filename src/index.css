@@ -1145,6 +1145,31 @@ a.worker-name:hover {
   animation: spin 0.8s linear infinite;
 }
 
+.spinner-sm {
+  width: 22px;
+  height: 22px;
+  border-width: 3px;
+}
+
+.admin-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-list li:last-child {
+  border-bottom: 0;
+}
+
+.admin-email {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
