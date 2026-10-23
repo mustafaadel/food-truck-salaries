@@ -1,9 +1,9 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-// The Supabase project URL and publishable (anon) key are baked in at build time from the
-// SUPABASE_URL / SUPABASE_ANON_KEY repository variables. Both are safe to expose: row level
-// security in supabase/schema.sql is what protects the data. When they are missing, the app asks
-// for them on first launch and remembers them on that device.
+// The Supabase project URL and publishable (anon) key are baked in at build time from
+// .env.production. Both are safe to expose: row level security in supabase/schema.sql is what
+// protects the data. When they are missing, the app asks for them on first launch and remembers
+// them on that device.
 const CONFIG_KEY = 'fts.supabase-config'
 const MODE_KEY = 'fts.mode'
 

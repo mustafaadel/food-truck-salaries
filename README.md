@@ -31,13 +31,11 @@ The publishable key is safe to put in a website. Row level security in the schem
 
 ### 2. Turn on the website
 
-1. In this GitHub repository, open **Settings → Secrets and variables → Actions → Variables** and add two repository variables:
-   - `SUPABASE_URL`: the Project URL
-   - `SUPABASE_ANON_KEY`: the publishable key
+1. Put the Project URL and publishable key in [`.env.production`](.env.production) (already done for this repository).
 2. Open **Settings → Pages** and set **Source** to **GitHub Actions**.
 3. Open **Actions → Deploy to GitHub Pages → Run workflow**. After a minute or two the app is live at `https://<your-github-username>.github.io/food-truck-salaries/`.
 
-If you skip the repository variables, the app asks for the URL and key the first time it opens on each phone.
+Every push to `main` tests, builds and publishes the app again.
 
 ### 3. Put it on your phone
 
@@ -72,6 +70,6 @@ npm test         # unit tests
 npm run build    # production build in dist/
 ```
 
-To run against your database locally, create `.env.local` with `VITE_SUPABASE_URL=...` and `VITE_SUPABASE_ANON_KEY=...`.
+`npm run dev` ignores `.env.production`, so it starts on the setup screen. To use your database locally, copy `.env.production` to `.env.local`.
 
 Built with React, TypeScript, Vite and Supabase.
