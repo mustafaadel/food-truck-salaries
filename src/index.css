@@ -1,0 +1,1198 @@
+/* Mobile first: everything below is for phones, and min-width queries widen it for tablets and desktops. */
+
+:root {
+  --bg: #f6f4f1;
+  --surface: #ffffff;
+  --surface-2: #f1ede7;
+  --text: #1d1a16;
+  --muted: #6d665d;
+  --border: #e4ded6;
+  --accent: #c2410c;
+  --accent-hover: #9a3412;
+  --on-accent: #ffffff;
+  --accent-soft: #ffedd5;
+  --accent-soft-text: #9a3412;
+  --good: #15803d;
+  --good-soft: #dcfce7;
+  --bad: #b91c1c;
+  --bad-soft: #fee2e2;
+  --daily-bg: #dbeafe;
+  --daily-fg: #1e40af;
+  --payment-bg: #ede9fe;
+  --payment-fg: #5b21b6;
+  --deduction-bg: #fee2e2;
+  --deduction-fg: #991b1b;
+  --bonus-bg: #dcfce7;
+  --bonus-fg: #166534;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.05), 0 2px 8px rgb(0 0 0 / 0.04);
+  --radius: 14px;
+  --gutter: clamp(12px, 4vw, 24px);
+  --tabbar-height: 64px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  color-scheme: light dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Noto Sans Arabic', sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141210;
+    --surface: #1f1c19;
+    --surface-2: #2a2622;
+    --text: #f3efe9;
+    --muted: #a8a096;
+    --border: #36312b;
+    --accent: #fb923c;
+    --accent-hover: #fdba74;
+    --on-accent: #1d1a16;
+    --accent-soft: #431407;
+    --accent-soft-text: #fdba74;
+    --good: #4ade80;
+    --good-soft: #14532d;
+    --bad: #f87171;
+    --bad-soft: #450a0a;
+    --daily-bg: #172554;
+    --daily-fg: #bfdbfe;
+    --payment-bg: #2e1065;
+    --payment-fg: #ddd6fe;
+    --deduction-bg: #450a0a;
+    --deduction-fg: #fecaca;
+    --bonus-bg: #14532d;
+    --bonus-fg: #bbf7d0;
+    --shadow: none;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+  overflow-x: hidden;
+}
+
+body:has(dialog[open]) {
+  overflow: hidden;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.4rem, 1.2rem + 1vw, 1.75rem);
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 1.1rem;
+}
+
+a {
+  color: var(--accent);
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+button,
+a,
+label,
+input {
+  touch-action: manipulation;
+}
+
+:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.875rem;
+}
+
+.text-bad {
+  color: var(--bad);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ---------- App frame ---------- */
+
+.app {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: calc(10px + var(--safe-top)) calc(var(--gutter) + var(--safe-right)) 10px calc(var(--gutter) + var(--safe-left));
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(10px);
+  -webkit-backdrop-filter: saturate(1.4) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.brand span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand .icon {
+  flex: none;
+  color: var(--accent);
+}
+
+.content {
+  flex: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 16px calc(var(--gutter) + var(--safe-right)) calc(var(--tabbar-height) + var(--safe-bottom) + 24px)
+    calc(var(--gutter) + var(--safe-left));
+}
+
+.tabs-top {
+  display: none;
+}
+
+.tabs-bottom {
+  position: fixed;
+  inset: auto 0 0 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0 var(--safe-right) var(--safe-bottom) var(--safe-left);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+}
+
+.tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: var(--tabbar-height);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.tab.active {
+  color: var(--accent);
+}
+
+/* Short landscape phones: a slimmer tab bar leaves more room for content. */
+@media (max-height: 480px) and (orientation: landscape) {
+  :root {
+    --tabbar-height: 48px;
+  }
+
+  .tabs-bottom .tab {
+    flex-direction: row;
+    gap: 6px;
+    font-size: 0.85rem;
+  }
+}
+
+@media (min-width: 760px) {
+  :root {
+    --tabbar-height: 0px;
+  }
+
+  .tabs-bottom {
+    display: none;
+  }
+
+  .tabs-top {
+    display: flex;
+    gap: 4px;
+    margin-left: auto;
+  }
+
+  .tabs-top .tab {
+    flex-direction: row;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    font-size: 0.95rem;
+  }
+
+  .tabs-top .tab:hover {
+    background: var(--surface-2);
+  }
+
+  .tabs-top .tab.active {
+    background: var(--accent-soft);
+    color: var(--accent-soft-text);
+  }
+
+  .content {
+    padding-top: 24px;
+  }
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.page-head > div {
+  min-width: 0;
+}
+
+.page-head h1 {
+  overflow-wrap: anywhere;
+}
+
+.section-title {
+  margin-top: 8px;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 32px;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+
+.center-screen {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: calc(24px + var(--safe-top)) var(--gutter) calc(24px + var(--safe-bottom));
+}
+
+/* ---------- Cards ---------- */
+
+.card {
+  display: block;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  color: inherit;
+  min-width: 0;
+}
+
+.card-title {
+  font-size: 1rem;
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.card-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 12px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.worker-name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+a.worker-name:hover {
+  text-decoration: underline;
+}
+
+.big-amount {
+  font-size: clamp(1.6rem, 1.3rem + 1.5vw, 2.2rem);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  font-weight: 650;
+  line-height: 1.15;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color 0.15s,
+    transform 0.05s;
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+
+.btn-quiet {
+  background: transparent;
+  color: var(--muted);
+  padding: 0 10px;
+}
+
+.btn-quiet:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.btn-danger {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-btn:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.icon-btn-danger:hover:not(:disabled) {
+  background: var(--bad-soft);
+  color: var(--bad);
+}
+
+.link-btn {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ---------- Badges ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.badge-demo {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+}
+
+.badge-daily {
+  background: var(--daily-bg);
+  color: var(--daily-fg);
+}
+
+.badge-payment {
+  background: var(--payment-bg);
+  color: var(--payment-fg);
+}
+
+.badge-deduction {
+  background: var(--deduction-bg);
+  color: var(--deduction-fg);
+}
+
+.badge-bonus {
+  background: var(--bonus-bg);
+  color: var(--bonus-fg);
+}
+
+/* ---------- Month / day navigation ---------- */
+
+.period-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.period-center {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.period-label {
+  max-width: 100%;
+  min-height: 40px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  font-weight: 700;
+  font-size: 1.05rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.period-label:hover {
+  background: var(--surface-2);
+}
+
+/* The native picker input stays in the layout (so showPicker works) but invisible. */
+.period-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 40px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.period-reset {
+  min-height: 28px;
+  font-size: 0.8rem;
+}
+
+/* ---------- Today ---------- */
+
+.day-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+
+.day-total {
+  font-size: 1.35rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.worker-day {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.worker-day-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.worker-day-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 160px;
+}
+
+.btn-pay {
+  min-height: 52px;
+  min-width: 128px;
+  padding: 0 20px;
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.paid-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 52px;
+  min-width: 128px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: var(--good-soft);
+  color: var(--good);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.worker-day-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0 -10px -6px;
+}
+
+.worker-day-actions .btn {
+  min-height: 40px;
+  font-size: 0.9rem;
+}
+
+.mini-entries {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.mini-entries li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.mini-note {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.mini-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Month ---------- */
+
+.total-card {
+  background: linear-gradient(135deg, var(--accent-soft), var(--surface));
+}
+
+.total-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.total-grid > div {
+  display: flex;
+  flex-direction: column;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Summary table ---------- */
+
+.summary {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-row dt {
+  color: var(--muted);
+  min-width: 0;
+}
+
+.summary-row dd {
+  margin: 0;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.summary-minus dd {
+  color: var(--bad);
+}
+
+.summary-plus dd {
+  color: var(--good);
+}
+
+.summary-total {
+  border-bottom: 0;
+  padding-top: 10px;
+}
+
+.summary-total dt {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.summary-total dd {
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
+/* ---------- Workers ---------- */
+
+.worker-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  min-height: 64px;
+}
+
+.worker-row:hover {
+  border-color: var(--accent);
+}
+
+.worker-row-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.worker-row-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.worker-row > .icon {
+  flex: none;
+  color: var(--muted);
+}
+
+.worker-layout {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  .worker-layout {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+.entry-list {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.entry:last-child {
+  border-bottom: 0;
+}
+
+.entry-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.entry-date {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.entry-note {
+  flex-basis: 100%;
+  font-size: 0.85rem;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.entry-amount {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.amount-bonus {
+  color: var(--good);
+}
+
+.rate-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+}
+
+.rate-list li span {
+  flex: 1;
+  color: var(--muted);
+}
+
+/* ---------- Forms ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.field-label {
+  font-weight: 650;
+  font-size: 0.9rem;
+}
+
+.field-hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* 16px text stops iPhones from zooming in when a field is tapped. */
+.field input {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  font-size: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.field input:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+}
+
+.field input[type='date'],
+.field input[type='month'] {
+  display: block;
+  min-width: 0;
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+/* Side by side when there's room, stacked on narrow phones. */
+.field-row > .field {
+  flex: 1 1 160px;
+}
+
+.form-error {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bad-soft);
+  color: var(--bad);
+  font-weight: 600;
+}
+
+.choice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.choice-grid legend {
+  margin-bottom: 6px;
+  padding: 0;
+}
+
+.choice {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.choice:has(input:focus-visible) {
+  outline: 3px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+
+.choice-on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.choice-title {
+  font-weight: 700;
+}
+
+.choice-hint {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+/* ---------- Sheet (modal) ---------- */
+
+.sheet {
+  width: 100%;
+  max-width: 100%;
+  max-height: 100dvh;
+  margin: auto 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.sheet::backdrop {
+  background: rgb(0 0 0 / 0.45);
+}
+
+.sheet[open] .sheet-panel {
+  animation: sheet-up 0.22s ease-out;
+}
+
+.sheet-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100dvh - var(--safe-top) - 24px);
+  background: var(--surface);
+  border-radius: 20px 20px 0 0;
+}
+
+.sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 8px 4px 20px;
+}
+
+.sheet-header h2 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sheet-content {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 8px 20px calc(20px + var(--safe-bottom));
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(40px);
+    opacity: 0;
+  }
+}
+
+/* Tablets and desktops: a centered dialog instead of a bottom sheet. */
+@media (min-width: 600px) and (min-height: 500px) {
+  .sheet {
+    max-width: 520px;
+    margin: auto;
+  }
+
+  .sheet-panel {
+    max-height: calc(100dvh - 48px);
+    border-radius: 20px;
+  }
+
+  .sheet-content {
+    padding-bottom: 20px;
+  }
+}
+
+/* ---------- Sign in / setup ---------- */
+
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.auth-brand .icon {
+  color: var(--accent);
+}
+
+.auth-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+/* ---------- Toasts and loading ---------- */
+
+.toasts {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabbar-height) + var(--safe-bottom) + 12px);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: min(92vw, 420px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.toast {
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--text);
+  color: var(--bg);
+  font-weight: 600;
+  text-align: center;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 0.2);
+  animation: sheet-up 0.2s ease-out;
+}
+
+.toast-error {
+  background: var(--bad);
+  color: #fff;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 4px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ---------- Printing a salary statement ---------- */
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  :root {
+    --bg: #fff;
+    --surface: #fff;
+    --text: #000;
+    --muted: #444;
+    --border: #ccc;
+    --shadow: none;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  .content {
+    padding: 0;
+    max-width: none;
+  }
+
+  .card {
+    break-inside: avoid;
+  }
+
+  .worker-layout {
+    grid-template-columns: 1fr;
+  }
+}
