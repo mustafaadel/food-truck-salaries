@@ -550,6 +550,16 @@ a.worker-name:hover {
   color: var(--bonus-fg);
 }
 
+.badge-skip {
+  background: var(--surface-2);
+  color: var(--muted);
+}
+
+.entry-auto {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
 /* ---------- Month / day navigation ---------- */
 
 .period-nav {
@@ -652,7 +662,7 @@ a.worker-name:hover {
   font-variant-numeric: tabular-nums;
 }
 
-.paid-chip {
+.day-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -661,10 +671,25 @@ a.worker-name:hover {
   min-width: 128px;
   padding: 0 16px;
   border-radius: 12px;
-  background: var(--good-soft);
-  color: var(--good);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.day-chip-paid {
+  background: var(--good-soft);
+  color: var(--good);
+}
+
+/* Automatic daily pay that applies but isn't recorded yet, such as a future day. */
+.day-chip-planned {
+  border: 1.5px dashed var(--border);
+  color: var(--muted);
+}
+
+.day-chip-off {
+  background: var(--surface-2);
+  color: var(--muted);
 }
 
 .worker-day-actions {
@@ -942,6 +967,35 @@ a.worker-name:hover {
 /* Side by side when there's room, stacked on narrow phones. */
 .field-row > .field {
   flex: 1 1 160px;
+}
+
+.check-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.check-field input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+
+.check-field > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.check-label {
+  font-weight: 650;
 }
 
 .form-error {

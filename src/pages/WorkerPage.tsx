@@ -13,7 +13,7 @@ import { useData } from '../data/DataContext'
 import { parseAmount } from '../lib/money'
 import { defaultDateIn, formatDate, formatMonth, isValidMonth, monthOf, type Month } from '../lib/months'
 import { rateFor, summarizeMonth } from '../lib/payroll'
-import { entryKindLabel, type Worker } from '../lib/types'
+import { entryKindLabel, SKIP_LABELS, type Worker } from '../lib/types'
 import { useMonthParam } from '../lib/useMonthParam'
 
 export function WorkerPage() {
@@ -36,7 +36,7 @@ export function WorkerPage() {
 }
 
 function WorkerDetails({ worker }: { worker: Worker }) {
-  const { data, addEntries, deleteEntry, updateWorker, deleteWorker, deleteSalary } = useData()
+  const { data, addEntries, deleteEntry, updateWorker, deleteWorker, deleteSalary, skipDay, unskipDay } = useData()
   const { money } = useSettings()
   const { run } = useFeedback()
   const navigate = useNavigate()
@@ -45,9 +45,14 @@ function WorkerDetails({ worker }: { worker: Worker }) {
   const [busy, setBusy] = useState(false)
 
   const summary = summarizeMonth(worker, data.rates, data.entries, month)
-  const entries = data.entries
-    .filter((e) => e.workerId === worker.id && monthOf(e.date) === month)
-    .sort((a, b) => b.date.localeCompare(a.date))
+  const entries = data.entries.filter((e) => e.workerId === worker.id && monthOf(e.date) === month)
+  const skips = data.skips.filter((s) => s.workerId === worker.id && monthOf(s.date) === month)
+  // Newest first, with days marked absent or not taken listed among the payments.
+  const records = [
+    ...entries.map((entry) => ({ key: entry.id, date: entry.date, entry, skip: undefined })),
+    ...skips.map((skip) => ({ key: `skip-${skip.date}`, date: skip.date, entry: undefined, skip })),
+  ].sort((a, b) => b.date.localeCompare(a.date))
+  const absentDays = skips.filter((s) => s.reason === 'absent').length
   const hasAnyEntries = data.entries.some((e) => e.workerId === worker.id)
   const rates = data.rates
     .filter((r) => r.workerId === worker.id)
@@ -119,7 +124,7 @@ function WorkerDetails({ worker }: { worker: Worker }) {
 
       <div className="worker-layout">
         <section className="card stack-sm">
-          <SummaryRows summary={summary} />
+          <SummaryRows summary={summary} absentDays={absentDays} />
           <div className="button-row no-print">
             <button className="btn btn-primary" onClick={() => setSheet('entry')}>
               <Icon name="plus" size={18} /> Add
@@ -137,33 +142,63 @@ function WorkerDetails({ worker }: { worker: Worker }) {
 
         <section className="card">
           <h2 className="card-title">Records for {formatMonth(month)}</h2>
-          {entries.length === 0 ? (
+          {records.length === 0 ? (
             <p className="muted">Nothing recorded this month.</p>
           ) : (
             <ul className="entry-list">
-              {entries.map((entry) => (
-                <li key={entry.id} className="entry">
-                  <div className="entry-main">
-                    <span className="entry-date">{formatDate(entry.date)}</span>
-                    <span className={`badge badge-${entry.kind}`}>{entryKindLabel(entry.kind)}</span>
-                    {entry.note && <span className="entry-note">{entry.note}</span>}
-                  </div>
-                  <span className={`entry-amount amount-${entry.kind}`}>
-                    {entry.kind === 'bonus' ? '+' : '−'} {money(entry.amount)}
-                  </span>
-                  <button
-                    className="icon-btn icon-btn-danger no-print"
-                    aria-label={`Delete ${entryKindLabel(entry.kind).toLowerCase()} of ${money(entry.amount)} on ${formatDate(entry.date)}`}
-                    disabled={busy}
-                    onClick={() => {
-                      if (confirm(`Delete this ${entryKindLabel(entry.kind).toLowerCase()} of ${money(entry.amount)}?`))
-                        void guarded(() => deleteEntry(entry.id), 'Deleted')
-                    }}
-                  >
-                    <Icon name="trash" size={18} />
-                  </button>
-                </li>
-              ))}
+              {records.map(({ key, entry, skip }) =>
+                skip ? (
+                  <li key={key} className="entry">
+                    <div className="entry-main">
+                      <span className="entry-date">{formatDate(skip.date)}</span>
+                      <span className="badge badge-skip">{SKIP_LABELS[skip.reason]}</span>
+                    </div>
+                    <span className="entry-amount muted">0</span>
+                    <button
+                      className="icon-btn no-print"
+                      aria-label={`Undo: ${SKIP_LABELS[skip.reason]} on ${formatDate(skip.date)}`}
+                      disabled={busy}
+                      onClick={() => void guarded(() => unskipDay(worker.id, skip.date), 'Daily pay back on')}
+                    >
+                      <Icon name="undo" size={18} />
+                    </button>
+                  </li>
+                ) : (
+                  <li key={key} className="entry">
+                    <div className="entry-main">
+                      <span className="entry-date">{formatDate(entry.date)}</span>
+                      <span className={`badge badge-${entry.kind}`}>{entryKindLabel(entry.kind)}</span>
+                      {entry.auto && <span className="entry-auto">automatic</span>}
+                      {entry.note && <span className="entry-note">{entry.note}</span>}
+                    </div>
+                    <span className={`entry-amount amount-${entry.kind}`}>
+                      {entry.kind === 'bonus' ? '+' : '−'} {money(entry.amount)}
+                    </span>
+                    <button
+                      className="icon-btn icon-btn-danger no-print"
+                      aria-label={`Delete ${entryKindLabel(entry.kind).toLowerCase()} of ${money(entry.amount)} on ${formatDate(entry.date)}`}
+                      disabled={busy}
+                      onClick={() => {
+                        if (entry.auto) {
+                          // Removing automatic daily pay marks the day so it isn't added back.
+                          if (
+                            confirm(
+                              `Remove the automatic daily pay on ${formatDate(entry.date)}? It won't be added again.`,
+                            )
+                          )
+                            void guarded(() => skipDay(worker.id, entry.date, 'not_taken'), 'Daily pay removed')
+                        } else if (
+                          confirm(`Delete this ${entryKindLabel(entry.kind).toLowerCase()} of ${money(entry.amount)}?`)
+                        ) {
+                          void guarded(() => deleteEntry(entry.id), 'Deleted')
+                        }
+                      }}
+                    >
+                      <Icon name="trash" size={18} />
+                    </button>
+                  </li>
+                ),
+              )}
             </ul>
           )}
         </section>
@@ -180,7 +215,9 @@ function WorkerDetails({ worker }: { worker: Worker }) {
             <span className="muted small"> a month</span>
           </div>
           <div className="muted small">
-            {worker.dailyAmount ? `Usually takes ${money(worker.dailyAmount)} a day` : 'No daily pay set'}
+            {worker.dailyAmount
+              ? `Takes ${money(worker.dailyAmount)} a day${worker.autoDaily ? ', recorded automatically' : ''}`
+              : 'No daily pay set'}
           </div>
           {rates.length > 1 && (
             <ul className="rate-list">
@@ -222,7 +259,9 @@ function WorkerDetails({ worker }: { worker: Worker }) {
             <button
               className="btn btn-secondary"
               disabled={busy}
-              onClick={() => void guarded(() => updateWorker(worker.id, { endMonth: null }), `${worker.name} is working again`)}
+              onClick={() =>
+                void guarded(() => updateWorker(worker.id, { endMonth: null }), `${worker.name} is working again`)
+              }
             >
               Mark as working again
             </button>
@@ -260,7 +299,17 @@ function WorkerDetails({ worker }: { worker: Worker }) {
   )
 }
 
-function SalaryForm({ worker, month, current, onClose }: { worker: Worker; month: Month; current?: number; onClose(): void }) {
+function SalaryForm({
+  worker,
+  month,
+  current,
+  onClose,
+}: {
+  worker: Worker
+  month: Month
+  current?: number
+  onClose(): void
+}) {
   const { setSalary } = useData()
   const { run } = useFeedback()
   const [amount, setAmount] = useState(current === undefined ? '' : String(current))

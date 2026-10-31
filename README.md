@@ -6,7 +6,8 @@ A phone-friendly web app for paying food truck workers. Each worker has a **mont
 
 ## What it does
 
-- **Today**: one tap per worker records their daily pay. "Pay all" handles everyone at once, and Undo fixes a mistaken tap.
+- **Automatic daily pay**: each worker's daily amount comes off their salary every day without a tap. If a worker was absent or didn't take it, tap **Absent** or **Didn't take it** on the Today screen and that day isn't counted. **Undo** brings it back. You can mark a future day ahead of time, and absences are counted in the month summary. Days are filled in whenever the app opens, so nothing is missed if nobody opens it for a while.
+- **Today**: workers without automatic daily pay get a one-tap **Pay** button instead, and "Pay all" handles everyone at once.
 - **Deductions, bonuses and payouts**, each with a date and an optional note (for example "Absent on Friday").
 - **Month**: every worker's salary, daily pay, deductions, bonuses and what's left, plus totals for the month. "Pay the rest" records the end-of-month payout.
 - **Running balance**: anything not paid at the end of a month carries into the next one. So does overpayment, as a negative amount.

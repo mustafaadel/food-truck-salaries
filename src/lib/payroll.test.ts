@@ -11,13 +11,15 @@ const worker: Worker = {
   startMonth: '2026-01',
   endMonth: null,
   notes: null,
+  autoDaily: false,
+  autoDailyFrom: null,
 }
 
 const rates: SalaryRate[] = [{ id: 'r1', workerId: 'w1', effectiveMonth: '2026-01', monthlyAmount: 10000 }]
 
 let nextId = 0
 function entry(date: string, kind: EntryKind, amount: number, workerId = 'w1'): Entry {
-  return { id: `e${nextId++}`, workerId, date, kind, amount, note: null }
+  return { id: `e${nextId++}`, workerId, date, kind, amount, note: null, auto: false }
 }
 
 function dailies(month: string, days: number, amount = 100): Entry[] {
@@ -81,7 +83,11 @@ describe('summarizeMonth', () => {
   it('stops the salary after the last month but keeps the balance', () => {
     const leaver = { ...worker, endMonth: '2026-01' }
     const entries = dailies('2026-01', 30)
-    expect(summarizeMonth(leaver, rates, entries, '2026-02')).toMatchObject({ salary: 0, carriedOver: 7000, remaining: 7000 })
+    expect(summarizeMonth(leaver, rates, entries, '2026-02')).toMatchObject({
+      salary: 0,
+      carriedOver: 7000,
+      remaining: 7000,
+    })
   })
 
   it('accumulates over many months', () => {

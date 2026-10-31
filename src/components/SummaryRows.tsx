@@ -11,7 +11,7 @@ function Row({ label, value, tone }: { label: string; value: string; tone?: 'tot
 }
 
 /** The month's breakdown, ending with how much the worker can still take. */
-export function SummaryRows({ summary }: { summary: MonthSummary }) {
+export function SummaryRows({ summary, absentDays = 0 }: { summary: MonthSummary; absentDays?: number }) {
   const { money } = useSettings()
   const days = summary.dailyDays === 1 ? '1 day' : `${summary.dailyDays} days`
   return (
@@ -29,6 +29,7 @@ export function SummaryRows({ summary }: { summary: MonthSummary }) {
         value={summary.dailyPaid ? `− ${money(summary.dailyPaid)}` : money(0)}
         tone={summary.dailyPaid ? 'minus' : undefined}
       />
+      {absentDays > 0 && <Row label="Absent" value={absentDays === 1 ? '1 day' : `${absentDays} days`} />}
       {summary.deductions !== 0 && <Row label="Deductions" value={`− ${money(summary.deductions)}`} tone="minus" />}
       {summary.otherPaid !== 0 && <Row label="Payouts" value={`− ${money(summary.otherPaid)}`} tone="minus" />}
       <Row

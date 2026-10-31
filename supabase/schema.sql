@@ -5,6 +5,9 @@
 -- Everyone listed in public.admins shares the same workers and payments. Row level security lets
 -- admins read and change everything and gives every other account nothing. The first account
 -- created becomes an admin automatically; admins add more from the app's Settings page.
+--
+-- Daily pay can be automatic: the app records each worker's daily amount for every day, except
+-- days marked in public.day_skips (absent, or didn't take it).
 
 -- ---------- Admins ----------
 
@@ -71,6 +74,8 @@ create table if not exists public.workers (
   start_month text not null check (start_month ~ '^\d{4}-(0[1-9]|1[0-2])$'),
   end_month text check (end_month ~ '^\d{4}-(0[1-9]|1[0-2])$' and end_month >= start_month),
   notes text,
+  auto_daily boolean not null default false,
+  auto_daily_from date,
   created_at timestamptz not null default now()
 );
 
@@ -92,7 +97,21 @@ create table if not exists public.entries (
   kind text not null check (kind in ('daily', 'payment', 'deduction', 'bonus')),
   amount numeric(12, 2) not null check (amount > 0),
   note text,
-  created_at timestamptz not null default now()
+  auto boolean not null default false,
+  -- Set only for automatic daily pay, so the unique key below allows one per worker and day.
+  auto_date date generated always as (case when auto then entry_date end) stored,
+  created_at timestamptz not null default now(),
+  unique (worker_id, auto_date)
+);
+
+create table if not exists public.day_skips (
+  id uuid primary key default gen_random_uuid(),
+  created_by uuid default auth.uid() references auth.users (id) on delete set null,
+  worker_id uuid not null references public.workers (id) on delete cascade,
+  day date not null,
+  reason text not null default 'absent' check (reason in ('absent', 'not_taken')),
+  created_at timestamptz not null default now(),
+  unique (worker_id, day)
 );
 
 -- Upgrade from the first version, where each account had its own records (owner_id). The records
@@ -125,6 +144,31 @@ begin
 end
 $$;
 
+-- Upgrade to automatic daily pay. Workers who already take daily pay switch to it from today.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'workers' and column_name = 'auto_daily'
+  ) then
+    alter table public.workers add column auto_daily boolean not null default false;
+    alter table public.workers add column auto_daily_from date;
+    update public.workers
+    set auto_daily = true, auto_daily_from = current_date
+    where daily_amount > 0 and (end_month is null or end_month >= to_char(current_date, 'YYYY-MM'));
+  end if;
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'entries' and column_name = 'auto'
+  ) then
+    alter table public.entries add column auto boolean not null default false;
+    alter table public.entries
+      add column auto_date date generated always as (case when auto then entry_date end) stored;
+    alter table public.entries add constraint entries_worker_id_auto_date_key unique (worker_id, auto_date);
+  end if;
+end
+$$;
+
 create index if not exists salary_rates_worker_idx on public.salary_rates (worker_id);
 create index if not exists entries_worker_date_idx on public.entries (worker_id, entry_date);
 
@@ -134,6 +178,7 @@ alter table public.admins enable row level security;
 alter table public.workers enable row level security;
 alter table public.salary_rates enable row level security;
 alter table public.entries enable row level security;
+alter table public.day_skips enable row level security;
 
 drop policy if exists "Owners manage their workers" on public.workers;
 drop policy if exists "Owners manage their salary rates" on public.salary_rates;
@@ -152,7 +197,14 @@ create policy "Admins manage salary rates" on public.salary_rates
   with check ((select public.is_admin()));
 
 drop policy if exists "Admins manage entries" on public.entries;
+-- Automatic daily pay is never recorded ahead of time (a day of slack covers time zones).
 create policy "Admins manage entries" on public.entries
+  for all to authenticated
+  using ((select public.is_admin()))
+  with check ((select public.is_admin()) and (not auto or entry_date <= current_date + 1));
+
+drop policy if exists "Admins manage day skips" on public.day_skips;
+create policy "Admins manage day skips" on public.day_skips
   for all to authenticated
   using ((select public.is_admin()))
   with check ((select public.is_admin()));
@@ -173,9 +225,10 @@ create policy "Admins remove other admins" on public.admins
   for delete to authenticated
   using ((select public.is_admin()) and email <> lower(coalesce((select auth.jwt()) ->> 'email', '')));
 
-grant select, insert, update, delete on public.workers, public.salary_rates, public.entries to authenticated;
+grant select, insert, update, delete on public.workers, public.salary_rates, public.entries, public.day_skips
+  to authenticated;
 grant select, insert, delete on public.admins to authenticated;
-revoke all on public.admins, public.workers, public.salary_rates, public.entries from anon;
+revoke all on public.admins, public.workers, public.salary_rates, public.entries, public.day_skips from anon;
 
 -- Shows who can use the app.
 select email as admins from public.admins order by added_at, email;

@@ -25,3 +25,26 @@ export function AmountField(props: FieldProps) {
 export function MonthField(props: FieldProps) {
   return <Field type="month" pattern="\d{4}-\d{2}" placeholder="YYYY-MM" {...props} />
 }
+
+/** A checkbox with a large tap area, for on/off settings. */
+export function CheckField({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string
+  hint?: ReactNode
+  checked: boolean
+  onChange(checked: boolean): void
+}) {
+  return (
+    <label className="check-field">
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span>
+        <span className="check-label">{label}</span>
+        {hint && <span className="field-hint">{hint}</span>}
+      </span>
+    </label>
+  )
+}

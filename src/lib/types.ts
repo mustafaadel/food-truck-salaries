@@ -11,6 +11,9 @@ export interface Worker {
   /** Last month the worker earns a salary; null while they still work here. */
   endMonth: Month | null
   notes: string | null
+  /** Records `dailyAmount` as daily pay every day without a tap, from `autoDailyFrom` on. */
+  autoDaily: boolean
+  autoDailyFrom: ISODate | null
 }
 
 /** A monthly salary that applies from `effectiveMonth` until a later rate replaces it. */
@@ -31,6 +34,22 @@ export interface Entry {
   /** Always positive; `kind` decides whether it adds to or subtracts from what the worker is owed. */
   amount: number
   note: string | null
+  /** Daily pay the app recorded by itself. */
+  auto: boolean
+}
+
+export type SkipReason = 'absent' | 'not_taken'
+
+/** A day without automatic daily pay for one worker: they were absent or didn't take it. */
+export interface DaySkip {
+  workerId: string
+  date: ISODate
+  reason: SkipReason
+}
+
+export const SKIP_LABELS: Record<SkipReason, string> = {
+  absent: 'Absent',
+  not_taken: "Didn't take daily pay",
 }
 
 export const ENTRY_KINDS: { kind: EntryKind; label: string; hint: string }[] = [

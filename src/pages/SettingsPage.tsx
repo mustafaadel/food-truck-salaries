@@ -6,7 +6,7 @@ import { isConfigBuiltIn, saveSupabaseConfig, setMode } from '../data/config'
 import { useData } from '../data/DataContext'
 import { resetDemoData } from '../data/localStore'
 import { todayISO } from '../lib/months'
-import { entryKindLabel } from '../lib/types'
+import { entryKindLabel, SKIP_LABELS } from '../lib/types'
 
 function download(filename: string, content: string, type: string) {
   const url = URL.createObjectURL(new Blob([content], { type }))
@@ -29,11 +29,18 @@ export function SettingsPage() {
 
   const exportCsv = () => {
     const names = new Map(data.workers.map((w) => [w.id, w.name]))
-    const rows = [...data.entries]
+    const rows = [
+      ...data.entries.map((e) => ({
+        date: e.date,
+        cells: [names.get(e.workerId) ?? '', entryKindLabel(e.kind) + (e.auto ? ' (automatic)' : ''), e.amount, e.note],
+      })),
+      ...data.skips.map((s) => ({
+        date: s.date,
+        cells: [names.get(s.workerId) ?? '', SKIP_LABELS[s.reason], 0, null],
+      })),
+    ]
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map((e) =>
-        [e.date, names.get(e.workerId) ?? '', entryKindLabel(e.kind), e.amount, e.note].map(csvCell).join(','),
-      )
+      .map((row) => [row.date, ...row.cells].map(csvCell).join(','))
     // The byte order mark makes Excel read Arabic and other non-English names correctly.
     download(`salaries-${todayISO()}.csv`, '﻿' + ['Date,Worker,Type,Amount,Note', ...rows].join('\r\n'), 'text/csv')
   }

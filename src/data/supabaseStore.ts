@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { Entry, EntryKind, SalaryRate, Worker } from '../lib/types'
+import type { ISODate } from '../lib/months'
+import type { DaySkip, Entry, EntryKind, SalaryRate, SkipReason, Worker } from '../lib/types'
 import { NoAccessError, type DataStore, type NewEntry, type NewWorker, type WorkerPatch } from './store'
 
 interface WorkerRow {
@@ -10,6 +11,8 @@ interface WorkerRow {
   start_month: string
   end_month: string | null
   notes: string | null
+  auto_daily: boolean
+  auto_daily_from: string | null
 }
 
 interface RateRow {
@@ -26,6 +29,13 @@ interface EntryRow {
   kind: EntryKind
   amount: number | string
   note: string | null
+  auto: boolean
+}
+
+interface SkipRow {
+  worker_id: string
+  day: string
+  reason: SkipReason
 }
 
 const toWorker = (r: WorkerRow): Worker => ({
@@ -36,6 +46,8 @@ const toWorker = (r: WorkerRow): Worker => ({
   startMonth: r.start_month,
   endMonth: r.end_month,
   notes: r.notes,
+  autoDaily: r.auto_daily,
+  autoDailyFrom: r.auto_daily_from,
 })
 
 const toRate = (r: RateRow): SalaryRate => ({
@@ -52,6 +64,18 @@ const toEntry = (r: EntryRow): Entry => ({
   kind: r.kind,
   amount: Number(r.amount),
   note: r.note,
+  auto: r.auto,
+})
+
+const toSkip = (r: SkipRow): DaySkip => ({ workerId: r.worker_id, date: r.day, reason: r.reason })
+
+const entryColumns = (e: NewEntry, auto: boolean) => ({
+  worker_id: e.workerId,
+  entry_date: e.date,
+  kind: e.kind,
+  amount: e.amount,
+  note: e.note,
+  auto,
 })
 
 function workerColumns(w: WorkerPatch): Partial<WorkerRow> {
@@ -62,6 +86,8 @@ function workerColumns(w: WorkerPatch): Partial<WorkerRow> {
   if (w.startMonth !== undefined) row.start_month = w.startMonth
   if (w.endMonth !== undefined) row.end_month = w.endMonth
   if (w.notes !== undefined) row.notes = w.notes
+  if (w.autoDaily !== undefined) row.auto_daily = w.autoDaily
+  if (w.autoDailyFrom !== undefined) row.auto_daily_from = w.autoDailyFrom
   return row
 }
 
@@ -95,12 +121,21 @@ export class SupabaseStore implements DataStore {
     const { data: isAdmin, error } = await this.db.rpc('is_admin')
     if (error) throw error
     if (!isAdmin) throw new NoAccessError()
-    const [workers, rates, entries] = await Promise.all([
-      this.fetchAll<WorkerRow>('workers', 'id, name, phone, daily_amount, start_month, end_month, notes'),
+    const [workers, rates, entries, skips] = await Promise.all([
+      this.fetchAll<WorkerRow>(
+        'workers',
+        'id, name, phone, daily_amount, start_month, end_month, notes, auto_daily, auto_daily_from',
+      ),
       this.fetchAll<RateRow>('salary_rates', 'id, worker_id, effective_month, monthly_amount'),
-      this.fetchAll<EntryRow>('entries', 'id, worker_id, entry_date, kind, amount, note'),
+      this.fetchAll<EntryRow>('entries', 'id, worker_id, entry_date, kind, amount, note, auto'),
+      this.fetchAll<SkipRow>('day_skips', 'worker_id, day, reason'),
     ])
-    return { workers: workers.map(toWorker), rates: rates.map(toRate), entries: entries.map(toEntry) }
+    return {
+      workers: workers.map(toWorker),
+      rates: rates.map(toRate),
+      entries: entries.map(toEntry),
+      skips: skips.map(toSkip),
+    }
   }
 
   async createWorker({ monthlySalary, ...fields }: NewWorker) {
@@ -147,20 +182,53 @@ export class SupabaseStore implements DataStore {
   }
 
   async addEntries(entries: NewEntry[]) {
-    const rows = entries.map((e) => ({
-      worker_id: e.workerId,
-      entry_date: e.date,
-      kind: e.kind,
-      amount: e.amount,
-      note: e.note,
-    }))
-    const { data, error } = await this.db.from('entries').insert(rows).select()
+    const { data, error } = await this.db
+      .from('entries')
+      .insert(entries.map((e) => entryColumns(e, false)))
+      .select()
+    if (error) throw error
+    return (data as EntryRow[]).map(toEntry)
+  }
+
+  async addAutoDailies(entries: NewEntry[]) {
+    // The database allows one automatic daily pay per worker and day, so when two phones fill the
+    // same days at once, the second one's rows are skipped instead of counted twice.
+    const { data, error } = await this.db
+      .from('entries')
+      .upsert(
+        entries.map((e) => entryColumns(e, true)),
+        { onConflict: 'worker_id,auto_date', ignoreDuplicates: true },
+      )
+      .select()
     if (error) throw error
     return (data as EntryRow[]).map(toEntry)
   }
 
   async deleteEntry(id: string) {
     const { error } = await this.db.from('entries').delete().eq('id', id)
+    if (error) throw error
+  }
+
+  async skipDay(workerId: string, date: ISODate, reason: SkipReason) {
+    // Save the mark first, so no other phone can fill the day again in between.
+    const { data, error } = await this.db
+      .from('day_skips')
+      .upsert({ worker_id: workerId, day: date, reason }, { onConflict: 'worker_id,day' })
+      .select('worker_id, day, reason')
+      .single()
+    if (error) throw error
+    const { error: deleteError } = await this.db
+      .from('entries')
+      .delete()
+      .eq('worker_id', workerId)
+      .eq('entry_date', date)
+      .eq('auto', true)
+    if (deleteError) throw deleteError
+    return toSkip(data)
+  }
+
+  async unskipDay(workerId: string, date: ISODate) {
+    const { error } = await this.db.from('day_skips').delete().eq('worker_id', workerId).eq('day', date)
     if (error) throw error
   }
 }

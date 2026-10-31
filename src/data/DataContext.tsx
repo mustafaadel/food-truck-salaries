@@ -1,6 +1,9 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Month } from '../lib/months'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useFeedback } from '../app/feedback'
 import { useSession } from '../app/session'
+import { missingAutoDailies } from '../lib/autoDaily'
+import { todayISO, type ISODate, type Month } from '../lib/months'
+import type { SkipReason } from '../lib/types'
 import { NoAccessError, type DataStore, type NewEntry, type NewWorker, type Snapshot, type WorkerPatch } from './store'
 
 interface DataContextValue {
@@ -14,6 +17,8 @@ interface DataContextValue {
   deleteSalary(id: string): Promise<void>
   addEntries(entries: NewEntry[]): Promise<void>
   deleteEntry(id: string): Promise<void>
+  skipDay(workerId: string, date: ISODate, reason: SkipReason): Promise<void>
+  unskipDay(workerId: string, date: ISODate): Promise<void>
 }
 
 const DataContext = createContext<DataContextValue | null>(null)
@@ -28,7 +33,11 @@ export function DataProvider({ store, children }: { store: DataStore; children: 
   const [data, setData] = useState<Snapshot | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [noAccess, setNoAccess] = useState(false)
+  const [today, setToday] = useState(todayISO)
   const session = useSession()
+  const { notify } = useFeedback()
+  const filling = useRef(false)
+  const incompleteFills = useRef(0)
 
   const load = useCallback(
     () =>
@@ -47,6 +56,50 @@ export function DataProvider({ store, children }: { store: DataStore; children: 
     setLoadError(null)
     await load()
   }, [load])
+
+  // Notice when the date changes while the app stays open, e.g. overnight on a phone.
+  useEffect(() => {
+    const refresh = () => setToday(todayISO())
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    const timer = setInterval(refresh, 60_000)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
+      clearInterval(timer)
+    }
+  }, [])
+
+  useEffect(() => {
+    incompleteFills.current = 0
+  }, [today])
+
+  // Records automatic daily pay for every day up to today that doesn't have it yet.
+  useEffect(() => {
+    if (!data || filling.current || incompleteFills.current >= 2) return
+    const missing = missingAutoDailies(data.workers, data.entries, data.skips, today)
+    if (missing.length === 0) return
+    filling.current = true
+    store
+      .addAutoDailies(missing)
+      .then((created) => {
+        if (created.length === missing.length) {
+          setData((d) => d && { ...d, entries: [...d.entries, ...created] })
+        } else {
+          // Another phone filled some of these days first; load its records instead.
+          incompleteFills.current++
+          void load()
+        }
+      })
+      .catch((error: unknown) => {
+        incompleteFills.current++
+        const message = typeof error === 'object' && error && 'message' in error ? String(error.message) : String(error)
+        notify(`Couldn't record automatic daily pay: ${message}`, 'error')
+      })
+      .finally(() => {
+        filling.current = false
+      })
+  }, [data, load, notify, store, today])
 
   const value = useMemo<DataContextValue | null>(() => {
     if (!data) return null
@@ -71,6 +124,7 @@ export function DataProvider({ store, children }: { store: DataStore; children: 
               workers: d.workers.filter((w) => w.id !== id),
               rates: d.rates.filter((r) => r.workerId !== id),
               entries: d.entries.filter((e) => e.workerId !== id),
+              skips: d.skips.filter((s) => s.workerId !== id),
             },
         )
       },
@@ -89,6 +143,23 @@ export function DataProvider({ store, children }: { store: DataStore; children: 
       async deleteEntry(id) {
         await store.deleteEntry(id)
         setData((d) => d && { ...d, entries: d.entries.filter((e) => e.id !== id) })
+      },
+      async skipDay(workerId, date, reason) {
+        const skip = await store.skipDay(workerId, date, reason)
+        const sameDay = (x: { workerId: string; date: string }) => x.workerId === workerId && x.date === date
+        setData(
+          (d) =>
+            d && {
+              ...d,
+              skips: [...d.skips.filter((s) => !sameDay(s)), skip],
+              entries: d.entries.filter((e) => !(e.auto && sameDay(e))),
+            },
+        )
+      },
+      async unskipDay(workerId, date) {
+        await store.unskipDay(workerId, date)
+        // The fill above then records that day's automatic daily pay again, if it applies.
+        setData((d) => d && { ...d, skips: d.skips.filter((s) => s.workerId !== workerId || s.date !== date) })
       },
     }
   }, [data, reload, store])

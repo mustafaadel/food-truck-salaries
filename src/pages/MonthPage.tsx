@@ -94,7 +94,14 @@ export function MonthPage() {
                   </Link>
                   {!isEmployedIn(worker, month) && <span className="badge">Not working this month</span>}
                 </div>
-                <SummaryRows summary={summary} />
+                <SummaryRows
+                  summary={summary}
+                  absentDays={
+                    data.skips.filter(
+                      (s) => s.workerId === worker.id && s.reason === 'absent' && monthOf(s.date) === month,
+                    ).length
+                  }
+                />
                 {summary.remaining > 0 && (
                   <button
                     className="btn btn-primary btn-block"
